@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Ponto Med Plus</title>
+  <link rel="stylesheet" href="styles.css">
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="login-screen" id="loginScreen">
+    <div class="brand-overlay"></div>
+    <section class="modal login-modal" aria-labelledby="loginTitle">
+      <img class="login-logo" src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgywsdWKH6rlDURrDoENalBtkXnhxike5bP4lesilVl-vBhsPrYmIIDLESb8VpR1e6AcRyxgXcyW8snNH4tSyIaJmTizACfOeqQYUjoaXhPE0MmMlHigietjYjKFLpEx5lccR3l10Q5RBwQMNBG8ENz6rAsMubobIyLRZa5DOLpWFtkMEH0Bx8_2LPVZFmb/s16000/logotipo-med-plus2025-1.png" alt="Med Plus">
+      <h1 id="loginTitle">Sistema de Ponto</h1>
+      <p class="login-help">Acesse com seu e-mail corporativo.</p>
+      <form id="loginForm" class="form-grid">
+        <label>
+          E-mail
+          <input id="loginEmail" type="email" value="paulo@medplus.local" autocomplete="username" required>
+        </label>
+        <label>
+          Senha
+          <input id="loginPassword" type="password" value="mudar@123" autocomplete="current-password" required>
+        </label>
+        <button class="primary-btn" type="submit">Entrar</button>
+      </form>
+      <p class="auth-message" id="loginMessage" role="status"></p>
+      <footer class="login-footer">© Med Plus+ ® 2026 - by Pauilo Corrêa.</footer>
+    </section>
+  </div>
+
+  <div class="app-shell is-hidden" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgywsdWKH6rlDURrDoENalBtkXnhxike5bP4lesilVl-vBhsPrYmIIDLESb8VpR1e6AcRyxgXcyW8snNH4tSyIaJmTizACfOeqQYUjoaXhPE0MmMlHigietjYjKFLpEx5lccR3l10Q5RBwQMNBG8ENz6rAsMubobIyLRZa5DOLpWFtkMEH0Bx8_2LPVZFmb/s16000/logotipo-med-plus2025-1.png" alt="Med Plus">
+      </div>
+      <div class="divider"></div>
+      <div class="signed-user" id="signedUser">Usuário</div>
+      <div class="divider"></div>
+      <nav class="side-nav" aria-label="Menu principal">
+        <button data-view="home" class="nav-link is-active">Início</button>
+        <button data-view="general" class="nav-link">Informações Gerais</button>
+        <button data-view="daily" class="nav-link">Ponto Diário</button>
+        <button data-view="history" class="nav-link">Meu Histórico</button>
+        <button data-view="receipts" class="nav-link">Comprovantes</button>
+        <button data-view="sign" class="nav-link">Assinar Ponto</button>
+        <button id="logoutBtn" class="nav-link danger-link">Sair</button>
+      </nav>
+      <div class="sidebar-actions">
+        <button id="themeToggle" class="ghost-btn" type="button">Tema escuro</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <button class="menu-btn" id="menuBtn" aria-label="Abrir menu">☰</button>
+        <h2 id="pageTitle">Início</h2>
+        <div class="clock-pill" id="clockNow">--:--</div>
+      </header>
+
+      <section class="modal view-modal" id="homeView">
+        <div class="view-header">
+          <h3>Bem-vindo</h3>
+          <span class="meta" id="todayLabel"></span>
+        </div>
+        <div class="home-grid">
+          <article class="status-panel">
+            <p class="eyebrow">Próxima marcação</p>
+            <h4 id="nextPunchLabel">Entrada 1</h4>
+            <p id="lastPunchText">Nenhum ponto registrado hoje.</p>
+            <button class="primary-btn" data-view-jump="daily">Marcar ponto</button>
+          </article>
+          <article class="status-panel">
+            <p class="eyebrow">Assinatura mensal</p>
+            <h4 id="signatureStatus">Pendente</h4>
+            <p id="signatureReminder">O lembrete aparece no último dia útil do mês.</p>
+            <button class="secondary-btn" data-view-jump="sign">Abrir folha</button>
+          </article>
+        </div>
+        <div class="notice is-hidden" id="monthReminder">
+          Hoje é o último dia útil do mês. Confira e assine sua folha de ponto.
+        </div>
+      </section>
+
+      <section class="modal view-modal is-hidden" id="generalView">
+        <div class="mobile-title">Informações Gerais</div>
+        <div class="summary-card">
+          <div class="summary-head">
+            <h3>Informações Gerais</h3>
+            <span id="generalMonth">Julho</span>
+          </div>
+          <dl class="summary-list" id="summaryList"></dl>
+        </div>
+      </section>
+
+      <section class="modal view-modal is-hidden" id="dailyView">
+        <div class="view-header">
+          <h3>Ponto Diário</h3>
+          <span class="meta mono" id="protocolPreview">MP-000000</span>
+        </div>
+        <div class="daily-grid">
+          <article class="camera-card">
+            <video id="cameraVideo" autoplay playsinline muted></video>
+            <canvas id="photoCanvas" class="is-hidden"></canvas>
+            <img id="photoPreview" class="photo-preview is-hidden" alt="Foto capturada">
+            <div class="button-row">
+              <button class="secondary-btn" id="startCameraBtn" type="button">Localizar e abrir câmera</button>
+              <button class="secondary-btn" id="capturePhotoBtn" type="button" disabled>Capturar foto</button>
+            </div>
+          </article>
+          <article class="punch-card">
+            <p class="eyebrow">Agora</p>
+            <div class="big-time" id="dailyClock">--:--:--</div>
+            <p id="geoStatus">A localização será solicitada automaticamente antes da foto.</p>
+            <button class="secondary-btn" id="geoBtn" type="button">Tentar localização novamente</button>
+            <button class="primary-btn" id="punchBtn" type="button">Registrar Entrada 1</button>
+            <p class="auth-message" id="punchMessage" role="status"></p>
+          </article>
+        </div>
+        <div class="recent-punches">
+          <h4>Marcações de hoje</h4>
+          <div id="todayPunches"></div>
+        </div>
+      </section>
+
+      <section class="modal view-modal is-hidden" id="historyView">
+        <div class="mobile-title">Meu Histórico</div>
+        <form class="date-filters" id="historyFilters">
+          <label>
+            Início
+            <input id="historyStart" type="date">
+          </label>
+          <label>
+            Fim
+            <input id="historyEnd" type="date">
+          </label>
+        </form>
+        <div class="history-card">
+          <h3>Recentes</h3>
+          <div id="historyList"></div>
+        </div>
+      </section>
+
+      <section class="modal view-modal is-hidden" id="receiptsView">
+        <div class="view-header">
+          <h3>Comprovantes</h3>
+          <span class="meta">Registros salvos</span>
+        </div>
+        <div class="receipt-list" id="receiptList"></div>
+      </section>
+
+      <section class="modal view-modal is-hidden" id="signView">
+        <div class="view-header">
+          <h3>Assinar Ponto</h3>
+          <span class="meta" id="signPeriod">Mês atual</span>
+        </div>
+        <div class="sign-controls">
+          <label>
+            Competência
+            <input id="signMonth" type="month">
+          </label>
+          <label>
+            Senha
+            <input id="signPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha">
+          </label>
+          <button class="primary-btn" id="signBtn" type="button">Assinar folha</button>
+        </div>
+        <p class="auth-message" id="signMessage" role="status"></p>
+        <article class="timesheet-paper" id="timesheetPaper"></article>
+      </section>
+    </main>
+  </div>
+
+  <section class="modal password-modal is-hidden" id="passwordModal" aria-labelledby="passwordTitle">
+    <h3 id="passwordTitle">Trocar senha obrigatória</h3>
+    <p>Por segurança, altere a senha padrão antes de continuar.</p>
+    <form id="passwordForm" class="form-grid">
+      <label>
+        Nova senha
+        <input id="newPassword" type="password" minlength="8" required>
+      </label>
+      <label>
+        Confirmar senha
+        <input id="confirmPassword" type="password" minlength="8" required>
+      </label>
+      <button class="primary-btn" type="submit">Salvar nova senha</button>
+    </form>
+    <p class="auth-message" id="passwordMessage" role="status"></p>
+  </section>
+</body>
+</html>
